@@ -116,8 +116,7 @@ patterns that have {{{with}}}-bindings:
         union f1 f2
 }}}
 
-Note that the first two {{{with}}}-bindings are attached to both the
- {{{Let}}} and {{{LetFun}}} cases.
+Note that the first two {{{with}}}-bindings are attached to both the {{{Let}}} and {{{LetFun}}} cases.
 
 In standard OCaml every alternative subpattern in an "or"-pattern has
 to bind the same variables: the following is an error, even if neither
