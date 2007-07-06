@@ -1,0 +1,246 @@
+#summary Documentation for pattern guards
+
+= Pattern guards =
+
+This page documents pattern guards in release 0.2.
+
+== Introduction ==
+
+*Pattern guards* extend OCaml's pattern matching with an additional
+ construct {{{with pat = exp}}} which can occur after each match case.
+
+{{{
+   match x with
+    | pat with g = y -> z
+    | ...
+    | pat with g = y -> z
+}}}
+
+In each case, if the result of evaluating x matches the pattern
+{{{pat}}} then the expression {{{y}}} is evaluated.  If the result
+matches the pattern {{{g}}} then the expression {{{z}}} is evaluated
+in an environment which includes any bindings made by {{{g}}}.
+
+For example, given types for representing expressions and
+environments:
+
+{{{
+   type exp = Var of exp
+            | Function of string * exp
+            | Apply of exp * exp
+
+   type env = (string * exp) list
+
+   val bind : string -> exp -> env -> env
+   val lookup : string -> env -> exp option
+}}}
+
+you can write the following evaluation function:
+
+{{{
+    let rec eval env = function
+       (* Look up variables in the environment *)
+       | Var x
+           with Some v = lookup x env -> v
+       | Var x -> failwith ("Unbound variable " ^ x)
+
+       (* Function values evaluate to themselves *)
+       | Function _ as e -> e
+
+       (* Applications bind the argument to the parameter then
+          evaluate the body *)
+       | Apply (e1, e2) 
+           with Function (x,e) = eval env e1 ->
+             eval (bind x (eval env e2) env) e
+
+       | Apply _ -> failwith "Non-function in function position"
+}}}       
+
+== Multiple bindings ==
+
+You can write more than one {{{with}}}-clause with each pattern.
+Evaluation stops and proceeds to the next case if matching any of the
+patterns fails.  For example, in the following definition, if finding
+{{{e1}}} fails then no attempt is made to find {{{e2}}}.
+
+{{{
+     let add map = function
+      | e1, e2 with Some v1 = find e1 map
+               with Some v2 = find e2 map -> e1 + e2
+      | _ -> raise Not_found
+}}}
+
+Bindings made in {{{with}}}-clauses are visible in subsequent clauses
+in the same group:
+
+{{{
+     let f = function
+       | A (x,y,z) with w = x + y
+                   with r = w + z -> g r w
+}}}
+
+== Or-patterns ==
+
+OCaml's "or"-patterns allow several patterns to be grouped together
+using the "|" connective.  The whole pattern matches if any of the
+alternatives matches:
+
+{{{
+    let rec fv = function
+        | Const _ -> empty
+        | Operator (_, e1, e2)
+        | Apply (e1, e2)        -> union (fv e1) (fv e2)
+        | Let (x, e1, e2)
+        | LetFun (x, e1, e2)    -> union (fv e1)
+                                         (diff (fv e2) (single x))
+        | LetRec (x, e1, e2)    -> diff (union (fv e1) (fv e2)) (single x)
+        | ...
+}}}
+
+This reduces code duplication, since you can use a single expression
+as the right hand side of several patterns rather than repeating the
+expression for each case.
+
+Similarly, you can use a single expression as the right hand of
+patterns that have {{{with}}}-bindings:
+
+{{{
+    let rec fv = function
+     ...
+     | Let (x, e1, e2)
+     | LetFun (x, e1, e2)) with f1 = fv e1
+                           with f2 = diff (fv e2) (single x)
+     | LetRec (x, e1, e2)  with xset = single x
+                           with f1   = diff (fv e1) xset
+                           with f2   = diff (fv e2) xset ->
+        union f1 f2
+}}}
+
+Note that the first two {{{with}}}-bindings are attached to both the
+ {{{Let}}} and {{{LetFun}}} cases.
+
+In standard OCaml every alternative subpattern in an "or"-pattern has
+to bind the same variables: the following is an error, even if neither
+{{{x}}} nor {{{y}}} is used in {{{e}}}.
+
+{{{
+   let f = function (* Not allowed in standard OCaml *)
+     | A x
+     | B y -> e
+}}}
+
+The rules for {{{with}}}-patterns are a little less restrictive.  As
+with standard "or"-patterns, only variables bound in every subpattern
+--- either in the pattern itself or in a {{{with}}}-binding --- can be
+used in the expression on the right hand side.  However, variables
+that are not used in the expression need not be bound in every branch.
+This relaxed condition is useful in the case that you want to use
+variables within {{{with}}}-bindings, but not in the right-hand-side
+expression:
+
+{{{
+   match v with
+   | A (a,b,c) 
+        with x = b + c
+   | B (a,x) -> x + a
+}}}
+
+The _patterns_ preprocessor will issue warnings for variables that are
+bound but not used.
+
+=== Or-patterns without "with" ===
+
+For uniformity, the relaxed rules are extended to "or"-patterns that
+have no {{{with}}}-bindings: the following code is valid under the
+extension, provided {{{x}}} and {{{y}}} are not used in {{{e}}}, but
+will give rise to a warning:
+
+{{{
+   (* Accepted with a warning under the "patterns" extension *)
+   let f = function
+     | A x
+     | B y -> e
+}}}
+
+== Combinations of "with" and "when" ==
+
+Unlike {{{with}}}-bindings, the {{{when}}} guard in OCaml belongs to
+each match case as a whole; it cannot be attached to individual
+patterns:
+
+{{{
+  (* Invalid OCaml *)
+  let _ = function
+   | A x when x > 3
+   | B x when x < 3 -> e
+}}}
+
+Consequently, when a case includes both {{{with}}} bindings and a
+{{{when}}} guard, the {{{when}}} clause must appear at the outermost
+level:
+
+{{{
+   (* Invalid *)
+   | Var x when x <> "ref"
+           with Some v = lookup x -> e
+}}}
+
+{{{
+   (* Valid *)
+   | Var x with Some v = lookup x
+           when x <> "ref" -> e
+}}}
+
+Of course, in the second fragment the lookup is performed before x is
+compared to "ref", which is probably not what was intended in the
+first fragment.  The desired behaviour is easy to recover, though,
+since {{{when}}} guards can be simulated using a match against
+{{{true}}}:
+
+{{{
+   (* Valid *)
+   | Var x with true = (x <> "ref")
+           with Some v = lookup x -> e
+}}}
+
+== Combining "or"-patterns, "with", and "when" ==
+
+In standard OCaml once one subpattern in an "or"-pattern group is
+fully matched no further matching is performed against the other
+patterns.  This holds true even if there is a {{{when}}} guard
+associated with the group.  For example, the following expression
+evaluates to {{{false}}}:
+
+{{{
+    match (3,2) with
+      | (x,y)
+      | (y,x) when x < y -> true
+      | _                -> false
+}}}
+
+The same principle obtains for patterns with {{{with}}} bindings; once
+an entire pattern, including the {{{with}}}-bindings, is matched then
+no matching is performed against other patterns in the "or"-pattern
+group.  For example, in the following expression the pattern marked
+{{{(a)}}} doesn't match because the second {{{with}}}-guard fails; the
+pattern marked {{{(b)}}} matches, but then evaluation of the
+{{{when}}} guard fails; at this point, matching of the group
+({{{(a)}}}, {{{(b)}}},{{{(c)}}}) is aborted; matching resumes at the
+pattern marked {{{(d)}}}, which succeeds.  The final value of the
+expression is therefore {{{2}}}.
+
+{{{
+     match (3,2) with
+      (* (a) *)
+      | (x,y) with z = x - y
+              with `A = `B
+      (* (b) *)
+      | (y,x) with z = x - y
+      (* (c) *)
+      | _ with z = 10
+         when z > 0 -> z
+      (* (d) *)
+      | (x,y) with z = x - y -> z + z
+}}}
+
+
