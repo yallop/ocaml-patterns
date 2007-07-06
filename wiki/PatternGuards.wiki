@@ -241,3 +241,5 @@ expression is therefore {{{2}}}.
       (* (d) *)
       | (x,y) with z = x - y -> z + z
 }}}
+
+A variant of pattern guards was proposed for Haskell by Martin Erwig and Simon Peyton Jones: see the 2000 Haskell Workshop paper [http://citeseer.ist.psu.edu/erwig00pattern.html Pattern Guards and Transformational Patterns] or [http://research.microsoft.com/~simonpj/Haskell/guards.html this earlier summary].
