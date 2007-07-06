@@ -19,7 +19,7 @@ construct {{{with pat = exp}}} which can occur after each match case.
 In each case, if the result of evaluating x matches the pattern
 {{{pat}}} then the expression {{{y}}} is evaluated.  If the result
 matches the pattern {{{g}}} then the expression {{{z}}} is evaluated
-in an environment which includes any bindings made by {{{g}}}.
+in an environment which includes any bindings made in {{{g}}}.
 
 For example, given types for representing expressions and
 environments:
@@ -242,4 +242,3 @@ expression is therefore {{{2}}}.
       (* (d) *)
       | (x,y) with z = x - y -> z + z
 }}}
-
