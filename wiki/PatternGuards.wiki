@@ -7,7 +7,7 @@ This page documents pattern guards in release 0.2.
 == Introduction ==
 
 *Pattern guards* extend OCaml's pattern matching with an additional
- construct {{{with pat = exp}}} which can occur after each match case.
+construct {{{with pat = exp}}} which can occur after each match case.
 
 {{{
    match x with
@@ -242,5 +242,4 @@ expression is therefore {{{2}}}.
       (* (d) *)
       | (x,y) with z = x - y -> z + z
 }}}
-
 
