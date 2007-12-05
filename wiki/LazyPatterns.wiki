@@ -19,14 +19,12 @@ by forcing it (as if with `Lazy.force`) and matching the result
 against `p`.  You can use `lazy` anywhere that you can use a regular
 constructor such as `Some`: for instance, `lazy` can appear in `let`,
 `match` or `try` patterns, deep inside another pattern, as prefix to a
-deep pattern, in an "or" pattern, or in a [PatternGuards pattern
-guard].
+deep pattern, in an "or" pattern, or in a [PatternGuards pattern guard].
 
 == Example: implementing `force` ==
 
 The following function behaves just like the
-[http://caml.inria.fr/pub/docs/manual-ocaml/libref/Lazy.html standard
-`Lazy.force`] function:
+[http://caml.inria.fr/pub/docs/manual-ocaml/libref/Lazy.html standard `Lazy.force`] function:
 
 {{{
   let force (lazy v) = v
@@ -49,19 +47,17 @@ we can write a function that computes the length
     | Cons (_, lazy tl) -> 1 + llength tl
 }}}
 
-The [http://code.google.com/p/ocaml-patterns/downloads/list
-distribution] contains more examples, including functions over streams
+The [http://code.google.com/p/ocaml-patterns/downloads/list distribution] contains more examples, including functions over streams
 in the [http://citeseer.ist.psu.edu/182358.html even style], based on
 the package in
-[http://www.cs.cmu.edu/afs/cs.cmu.edu/project/fox/mosaic/papers/cokasaki-thesis.ps
-Chris Okasaki's dissertation].
+[http://www.cs.cmu.edu/afs/cs.cmu.edu/project/fox/mosaic/papers/cokasaki-thesis.ps Chris Okasaki's dissertation].
 
 == How lazy are lazy patterns? == 
 
 With regular constructors (such as `Some` or `::'), constructing a
 value may involve computation (including side effects or failure to
 terminate), but deconstructing a value never does.  With `lazy` the
-situation is exactly reversed: the expression
+situation is exactly reversed.  The expression
 
 {{{
    lazy exp
