@@ -2,7 +2,7 @@
 
 = Pattern guards =
 
-This page documents pattern guards in release 0.2.
+This page documents pattern guards in release 0.3.
 
 == Introduction ==
 
