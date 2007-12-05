@@ -24,7 +24,7 @@ deep pattern, in an "or" pattern, or in a [PatternGuards pattern guard].
 == Example: implementing `force` ==
 
 The following function behaves just like the
-[http://caml.inria.fr/pub/docs/manual-ocaml/libref/Lazy.html standard `Lazy.force`] function:
+[http://caml.inria.fr/pub/docs/manual-ocaml/libref/Lazy.html standard Lazy.force] function:
 
 {{{
   let force (lazy v) = v
