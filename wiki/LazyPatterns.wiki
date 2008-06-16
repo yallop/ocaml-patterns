@@ -2,7 +2,7 @@
 
 = Lazy patterns =
 
-This page documents lazy patterns in release 0.3.
+This page documents lazy patterns in releases 0.3 and 0.4.
 
 == Introduction ==
 
